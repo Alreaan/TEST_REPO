@@ -1,53 +1,83 @@
-install.packages("readxl")
-library("readxl")
-library(dplyr)
+# Title
+# Name
+# Date
+# Description
+
+# Describe the research question you are addressing in this analysis
+# ...
+# ...
+# ...
+
+# load packages
 library(tidyverse)
-library(ggplot2)
-data <- read_excel("C:/Users/ASUS/Downloads//HistoricalQuotes.xlsx")
+library(lubridate)
 
-glimpse(data)
+# Import data
+apple <- read_csv("HistoricalQuotes.csv")
 
-# average share price in the last 10 yrs in opening time
-summarise(data, mean_Open =mean(Open))
+glimpse(apple)
 
-summarise(data, mean_of_Volume = mean(Volume),
-          mean_of_closing = mean(`Close/Last`))
+# Data munging
+# Clean up the data - 
+# Make sure our $ columns are actually numeric
+# Make sure the date is actually a date
+apple <- apple %>% 
+  mutate(Date = mdy(Date),
+         Close = parse_number(`Close/Last`),
+         Open = parse_number(Open),
+         High = parse_number(High),
+         Low = parse_number(Low),
+         Year = year(Date)
+  ) %>% 
+  select(-c(`Close/Last`))
 
-#data %>%
+
+# explore data:
+summary(apple)
+
+# average share price Open for each of the last 10 yrs
+apple %>% 
+  group_by(Year) %>% 
+  summarise(mean_Open = mean(Open))
+
+# Now try to calculate the year-on-year percentage increase:
+# ???
+
+# Global average share price in the last 10 yrs
+apple %>%
+  summarise(mean_Open = mean(Open))
+
+apple %>% 
+  summarise(mean_of_Volume = mean(Volume),
+            mean_of_closing = mean(Close))
+
+#apple %>%
 #group_by(Date) %>%
 #summarise(mean_date = mean(`Close/Last`))
 
 # yearly average share price. 
-p <- data %>%
+apple_summary <- apple %>%
   # mutate(month = format(Date, "%m"), year = format(Date, "%Y")) %>%
   mutate (year = format(Date, "%Y")) %>% 
   group_by(year) %>%
-  summarise(MEAN = mean(`Close/Last`))
+  summarise(MEAN = mean(Close))
 
-ggplot(data = p, aes(x = MEAN, y = year)) +
+ggplot(apple_summary, aes(x = MEAN, y = year)) +
   geom_line()
 
-
-
-
-plot1 <- ggplot(p, aes(MEAN, year, group = 1)) +
+# plot1
+ggplot(apple_summary, aes(MEAN, year, group = 1)) +
   geom_point() +
   geom_line() +
-  labs(x = "PRICE", y = "YEAR", 
+  labs(x = "PRICE", 
+       y = "YEAR", 
        title = "AVG APPL STOCK PRICE")
 
-plot1
-
-
-
-plot2 <- ggplot(p, aes(x = year, y = MEAN, fill = year)) +
+# plot2
+ggplot(apple_summary, aes(year, MEAN, fill = year)) +
   geom_bar(stat = "identity") +
   theme_classic() +
-  labs(
-    x = "YEAR",
-    y = "PRICE",
-    title = paste(
-      "APPL AVG STOCK PRICE IN LAST 10 YRS"
-    )
-  )
-plot2
+  labs(x = "YEAR",
+       y = "PRICE",
+       title = paste("APPL AVG STOCK PRICE IN LAST 10 YRS"))
+
